@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create CV - Polish My CV</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --notion-gray-100: #f7f6f3;
+            --notion-gray-200: #e9e5e3;
+            --notion-gray-300: #d1ccc7;
+            --notion-gray-400: #9b9590;
+            --notion-gray-500: #787066;
+            --notion-gray-600: #5e5a52;
+            --notion-text: #37352f;
+            --notion-text-light: #6f6b62;
+            --notion-blue: #2383e2;
+            --notion-blue-light: #edf3ff;
+            --notion-border: #e9e5e3;
+            --notion-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --notion-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --notion-shadow-active: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --notion-success: #28ca42;
+            --notion-warning: #ffbd2e;
+            --notion-error: #ff5f57;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: white;
+            color: var(--notion-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--notion-border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: var(--notion-shadow);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--notion-text) !important;
+            text-decoration: none;
+            letter-spacing: -0.02em;
+            transition: all 0.2s ease;
+        }
+
+        .navbar-brand:hover {
+            color: var(--notion-blue) !important;
+        }
+
+        .back-button {
+            color: var(--notion-text-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button:hover {
+            background: var(--notion-gray-100);
+            color: var(--notion-text);
+        }
+
+        /* Main Content */
+        .main-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease-out 0.2s forwards;
+        }
+
+        .page-title {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--notion-text);
+            margin-bottom: 20px;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .page-subtitle {
+            font-size: 20px;
+            color: var(--notion-text-light);
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        /* Form Container */
+        .form-container {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--notion-border);
+            box-shadow: var(--notion-shadow);
+            padding: 0;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease-out 0.4s forwards;
+        }
+
+        /* Section Headers */
+        .section-header {
+            background: var(--notion-gray-100);
+            border-bottom: 1px solid var(--notion-border);
+            padding: 24px 32px;
+            margin: 0;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--notion-text);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title i {
+            color: var(--notion-blue);
+            font-size: 16px;
+        }
+
+        .section-description {
+            color: var(--notion-text-light);
+            font-size: 15px;
+            margin: 0;
+        }
+
+        /* Form Section */
+        .form-section {
+            padding: 32px;
+            border-bottom: 1px solid var(--notion-border);
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--notion-text);
+            margin-bottom: 8px;
+            display: block;
+            font-size: 15px;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--notion-border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: white;
+            width: 100%;
+            font-family: inherit;
+            color: var(--notion-text);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--notion-blue);
+            box-shadow: 0 0 0 3px var(--notion-blue-light);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: var(--notion-gray-400);
+        }
+
+        .textarea-auto {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Dynamic Sections */
+        .dynamic-section {
+            border: 1px dashed var(--notion-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            transition: all 0.2s ease;
+            background: var(--notion-gray-100);
+        }
+
+        .dynamic-section:hover {
+            border-color: var(--notion-blue);
+            background: var(--notion-blue-light);
+        }
+
+        .dynamic-item {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid var(--notion-border);
+            box-shadow: var(--notion-shadow);
+            transition: all 0.2s ease;
+        }
+
+        .dynamic-item:hover {
+            box-shadow: var(--notion-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .dynamic-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--notion-border);
+        }
+
+        .dynamic-item-title {
+            font-weight: 600;
+            color: var(--notion-text);
+            font-size: 16px;
+        }
+
+        .btn-remove {
+            background: transparent;
+            color: var(--notion-text-light);
+            border: 1px solid var(--notion-border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-remove:hover {
+            background: var(--notion-error);
+            color: white;
+            border-color: var(--notion-error);
+        }
+
+        .btn-add {
+            background: var(--notion-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .btn-add:hover {
+            background: #1a75d1;
+            transform: translateY(-1px);
+            box-shadow: var(--notion-shadow-hover);
+        }
+
+        /* Custom Fields */
+        .custom-fields-section {
+            background: var(--notion-gray-100);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            border: 1px solid var(--notion-border);
+        }
+
+        .custom-field {
+            background: white;
+            border: 1px solid var(--notion-border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--notion-shadow);
+        }
+
+        .custom-field-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* Submit Section */
+        .submit-section {
+            background: var(--notion-text);
+            color: white;
+            padding: 40px 32px;
+            text-align: center;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .submit-section h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .submit-section p {
+            margin-bottom: 32px;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .btn-generate {
+            background: var(--notion-success);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--notion-shadow);
+        }
+
+        .btn-generate:hover {
+            background: #20a636;
+            transform: translateY(-2px);
+            box-shadow: var(--notion-shadow-hover);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 40px 16px 80px;
+            }
+
+            .page-title {
+                font-size: 36px;
+            }
+
+            .page-subtitle {
+                font-size: 18px;
+            }
+
+            .form-section {
+                padding: 24px 20px;
+            }
+
+            .section-header {
+                padding: 20px 20px;
+            }
+
+            .submit-section {
+                padding: 32px 20px;
+            }
+
+            .dynamic-item-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .custom-field-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-file-code me-2"></i>PolishMyCV
+            </a>
+            <div class="navbar-nav">
+                <a href="/dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+                <a href="/upload" class="nav-link">
+                    <i class="fas fa-upload me-1"></i>Upload CV
+                </a>
+                <a href="/logout" class="back-button">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Create your CV</h1>
+            <p class="page-subtitle">
+                Build your resume from scratch with our intelligent form builder and let AI generate a beautiful LaTeX document
+            </p>
+        </div>
+
+        <div class="form-container">
+            <form id="cvForm">
+                <!-- Personal Information -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-user"></i>
+                        Personal Information
+                    </div>
+                    <div class="section-description">Basic contact details and personal information</div>
+                </div>
+
+                <div class="form-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" name="name" placeholder="John Doe" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" name="email" placeholder="john@example.com" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" name="phone" placeholder="+1 (555) 123-4567">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="address" placeholder="City, State, Country">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">LinkedIn Profile</label>
+                                <input type="url" class="form-control" name="linkedin" placeholder="https://linkedin.com/in/johndoe">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">GitHub Profile</label>
+                                <input type="url" class="form-control" name="github" placeholder="https://github.com/johndoe">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Personal Website</label>
+                                <input type="url" class="form-control" name="website" placeholder="https://johndoe.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Summary -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-file-text"></i>
+                        Professional Summary
+                    </div>
+                    <div class="section-description">A brief overview of your professional background</div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-group">
+                        <label class="form-label">Summary</label>
+                        <textarea class="form-control textarea-auto" name="summary" placeholder="A passionate software engineer with 5+ years of experience in full-stack development..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Education -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        Education
+                    </div>
+                    <div class="section-description">Your educational background and qualifications</div>
+                </div>
+
+                <div class="form-section">
+                    <div id="education-section" class="dynamic-section">
+                        <div class="dynamic-item" data-section="education">
+                            <div class="dynamic-item-header">
+                                <div class="dynamic-item-title">Education #1</div>
+                                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Degree</label>
+                                        <input type="text" class="form-control" name="education[0][degree]" placeholder="Bachelor of Science in Computer Science">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Institution</label>
+                                        <input type="text" class="form-control" name="education[0][institution]" placeholder="University of Technology">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label">Date Range</label>
+                                        <input type="text" class="form-control" name="education[0][date]" placeholder="2018 - 2022">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label">Location</label>
+                                        <input type="text" class="form-control" name="education[0][location]" placeholder="Boston, MA">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label">GPA (Optional)</label>
+                                        <input type="text" class="form-control" name="education[0][gpa]" placeholder="3.8/4.0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Additional Details</label>
+                                <textarea class="form-control" name="education[0][details]" placeholder="Relevant coursework, honors, achievements..."></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addEducation()">
+                            <i class="fas fa-plus"></i> Add Another Education
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Experience -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-briefcase"></i>
+                        Work Experience
+                    </div>
+                    <div class="section-description">Your professional work history</div>
+                </div>
+
+                <div class="form-section">
+                    <div id="experience-section" class="dynamic-section">
+                        <div class="dynamic-item" data-section="experience">
+                            <div class="dynamic-item-header">
+                                <div class="dynamic-item-title">Experience #1</div>
+                                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Job Title</label>
+                                        <input type="text" class="form-control" name="experience[0][title]" placeholder="Senior Software Engineer">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Company</label>
+                                        <input type="text" class="form-control" name="experience[0][company]" placeholder="Tech Corp Inc.">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Date Range</label>
+                                        <input type="text" class="form-control" name="experience[0][date]" placeholder="Jan 2022 - Present">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Location</label>
+                                        <input type="text" class="form-control" name="experience[0][location]" placeholder="San Francisco, CA">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Description (One per line)</label>
+                                <textarea class="form-control textarea-auto" name="experience[0][description]" placeholder="• Led a team of 5 developers in building scalable web applications&#10;• Improved system performance by 40% through optimization&#10;• Mentored junior developers and conducted code reviews"></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addExperience()">
+                            <i class="fas fa-plus"></i> Add Another Experience
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Projects -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-project-diagram"></i>
+                        Projects
+                    </div>
+                    <div class="section-description">Notable projects you've worked on</div>
+                </div>
+
+                <div class="form-section">
+                    <div id="projects-section" class="dynamic-section">
+                        <div class="dynamic-item" data-section="projects">
+                            <div class="dynamic-item-header">
+                                <div class="dynamic-item-title">Project #1</div>
+                                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label class="form-label">Project Title</label>
+                                        <input type="text" class="form-control" name="projects[0][title]" placeholder="E-Commerce Platform">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label">Date/Duration</label>
+                                        <input type="text" class="form-control" name="projects[0][date]" placeholder="2023">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="projects[0][description]" placeholder="Built a full-stack e-commerce platform with user authentication, payment processing, and admin dashboard..."></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label class="form-label">Technologies Used</label>
+                                        <input type="text" class="form-control" name="projects[0][technologies]" placeholder="React, Node.js, MongoDB, Stripe API">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label">Project Link</label>
+                                        <input type="url" class="form-control" name="projects[0][link]" placeholder="https://github.com/user/project">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addProject()">
+                            <i class="fas fa-plus"></i> Add Another Project
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-cogs"></i>
+                        Skills
+                    </div>
+                    <div class="section-description">Your technical and professional skills</div>
+                </div>
+
+                <div class="form-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Programming Languages</label>
+                                <input type="text" class="form-control" name="skills[languages]" placeholder="Python, JavaScript, Java, C++">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Frameworks & Libraries</label>
+                                <input type="text" class="form-control" name="skills[frameworks]" placeholder="React, Django, Express.js, TensorFlow">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Tools & Software</label>
+                                <input type="text" class="form-control" name="skills[tools]" placeholder="Git, Docker, AWS, Visual Studio Code">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Databases</label>
+                                <input type="text" class="form-control" name="skills[databases]" placeholder="MySQL, MongoDB, PostgreSQL, Redis">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Other Skills</label>
+                        <input type="text" class="form-control" name="skills[other]" placeholder="Machine Learning, Data Analysis, Project Management">
+                    </div>
+                </div>
+
+                <!-- Custom Fields -->
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-plus-square"></i>
+                        Custom Sections
+                    </div>
+                    <div class="section-description">Add any additional sections not covered above</div>
+                </div>
+
+                <div class="form-section">
+                    <div id="custom-fields-section" class="custom-fields-section">
+                        <div id="custom-fields-container">
+                            <!-- Custom fields will be added here dynamically -->
+                        </div>
+                        <button type="button" class="btn-add" onclick="addCustomField()">
+                            <i class="fas fa-plus"></i> Add Custom Section
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="submit-section">
+                    <h3>Ready to Generate Your Professional CV?</h3>
+                    <p>Our AI will process your information and create a beautiful LaTeX resume for you.</p>
+                    <button type="submit" class="btn-generate">
+                        <div class="loading-spinner"></div>
+                        <i class="fas fa-magic"></i>
+                        Generate LaTeX Resume
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let educationCount = 1;
+        let experienceCount = 1;
+        let projectCount = 1;
+        let customFieldCount = 0;
+
+        function addEducation() {
+            const container = document.getElementById('education-section');
+            const template = `
+                <div class="dynamic-item" data-section="education">
+                    <div class="dynamic-item-header">
+                        <div class="dynamic-item-title">Education #${educationCount + 1}</div>
+                        <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Degree</label>
+                                <input type="text" class="form-control" name="education[${educationCount}][degree]" placeholder="Bachelor of Science in Computer Science">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Institution</label>
+                                <input type="text" class="form-control" name="education[${educationCount}][institution]" placeholder="University of Technology">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Date Range</label>
+                                <input type="text" class="form-control" name="education[${educationCount}][date]" placeholder="2018 - 2022">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="education[${educationCount}][location]" placeholder="Boston, MA">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">GPA (Optional)</label>
+                                <input type="text" class="form-control" name="education[${educationCount}][gpa]" placeholder="3.8/4.0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Additional Details</label>
+                        <textarea class="form-control" name="education[${educationCount}][details]" placeholder="Relevant coursework, honors, achievements..."></textarea>
+                    </div>
+                </div>
+            `;
+            
+            const addButton = container.querySelector('.btn-add');
+            addButton.insertAdjacentHTML('beforebegin', template);
+            educationCount++;
+        }
+
+        function addExperience() {
+            const container = document.getElementById('experience-section');
+            const template = `
+                <div class="dynamic-item" data-section="experience">
+                    <div class="dynamic-item-header">
+                        <div class="dynamic-item-title">Experience #${experienceCount + 1}</div>
+                        <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Job Title</label>
+                                <input type="text" class="form-control" name="experience[${experienceCount}][title]" placeholder="Senior Software Engineer">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control" name="experience[${experienceCount}][company]" placeholder="Tech Corp Inc.">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Date Range</label>
+                                <input type="text" class="form-control" name="experience[${experienceCount}][date]" placeholder="Jan 2022 - Present">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="experience[${experienceCount}][location]" placeholder="San Francisco, CA">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description (One per line)</label>
+                        <textarea class="form-control textarea-auto" name="experience[${experienceCount}][description]" placeholder="• Led a team of 5 developers in building scalable web applications&#10;• Improved system performance by 40% through optimization&#10;• Mentored junior developers and conducted code reviews"></textarea>
+                    </div>
+                </div>
+            `;
+            
+            const addButton = container.querySelector('.btn-add');
+            addButton.insertAdjacentHTML('beforebegin', template);
+            experienceCount++;
+        }
+
+        function addProject() {
+            const container = document.getElementById('projects-section');
+            const template = `
+                <div class="dynamic-item" data-section="projects">
+                    <div class="dynamic-item-header">
+                        <div class="dynamic-item-title">Project #${projectCount + 1}</div>
+                        <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label class="form-label">Project Title</label>
+                                <input type="text" class="form-control" name="projects[${projectCount}][title]" placeholder="E-Commerce Platform">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Date/Duration</label>
+                                <input type="text" class="form-control" name="projects[${projectCount}][date]" placeholder="2023">
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="projects[${projectCount}][description]" placeholder="Built a full-stack e-commerce platform with user authentication, payment processing, and admin dashboard..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label class="form-label">Technologies Used</label>
+                                <input type="text" class="form-control" name="projects[${projectCount}][technologies]" placeholder="React, Node.js, MongoDB, Stripe API">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Project Link</label>
+                                <input type="url" class="form-control" name="projects[${projectCount}][link]" placeholder="https://github.com/user/project">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const addButton = container.querySelector('.btn-add');
+            addButton.insertAdjacentHTML('beforebegin', template);
+            projectCount++;
+        }
+
+        function addCustomField() {
+            const container = document.getElementById('custom-fields-container');
+            const template = `
+                <div class="custom-field">
+                    <div class="custom-field-header">
+                        <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+                            <input type="text" class="form-control" name="custom[${customFieldCount}][title]" placeholder="Section Title (e.g., Certifications, Languages, Awards)">
+                        </div>
+                        <button type="button" class="btn-remove" onclick="removeCustomField(this)" style="margin-left: 12px;">Remove</button>
+                    </div>
+                    <div class="form-group">
+                        <textarea class="form-control textarea-auto" name="custom[${customFieldCount}][content]" placeholder="Add the content for this section...&#10;&#10;For lists, separate items with new lines:&#10;• Certification 1&#10;• Certification 2&#10;• Certification 3"></textarea>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', template);
+            customFieldCount++;
+        }
+
+        function removeItem(button) {
+            const item = button.closest('.dynamic-item');
+            item.remove();
+        }
+
+        function removeCustomField(button) {
+            const field = button.closest('.custom-field');
+            field.remove();
+        }
+
+        // Form submission
+        document.getElementById('cvForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitButton = document.querySelector('.btn-generate');
+            const spinner = document.querySelector('.loading-spinner');
+            const icon = submitButton.querySelector('.fas');
+            
+            // Show loading state
+            submitButton.disabled = true;
+            spinner.style.display = 'block';
+            icon.style.display = 'none';
+            submitButton.innerHTML = submitButton.innerHTML.replace('Generate LaTeX Resume', 'Processing...');
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const data = {};
+            
+            // Convert FormData to nested object
+            for (let [key, value] of formData.entries()) {
+                if (key.includes('[') && key.includes(']')) {
+                    // Handle nested arrays like education[0][degree]
+                    const match = key.match(/(\w+)\[(\d+)\]\[(\w+)\]/);
+                    if (match) {
+                        const [, section, index, field] = match;
+                        if (!data[section]) data[section] = [];
+                        if (!data[section][index]) data[section][index] = {};
+                        data[section][index][field] = value;
+                    } else {
+                        // Handle simple nested objects like skills[languages]
+                        const match2 = key.match(/(\w+)\[(\w+)\]/);
+                        if (match2) {
+                            const [, section, field] = match2;
+                            if (!data[section]) data[section] = {};
+                            data[section][field] = value;
+                        }
+                    }
+                } else {
+                    data[key] = value;
+                }
+            }
+            
+            // Handle custom fields
+            if (data.custom) {
+                const customSections = [];
+                Object.values(data.custom).forEach(custom => {
+                    if (custom.title && custom.content) {
+                        customSections.push({
+                            title: custom.title,
+                            content: custom.content
+                        });
+                    }
+                });
+                data.custom = customSections;
+            }
+            
+            // Clean up empty arrays and objects
+            Object.keys(data).forEach(key => {
+                if (Array.isArray(data[key])) {
+                    data[key] = data[key].filter(item => 
+                        item && Object.values(item).some(val => val && val.trim())
+                    );
+                }
+            });
+            
+            console.log('Form data:', data);
+            
+            // Send to backend
+            fetch('/api/create-cv', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Redirect to result page
+                    window.location.href = `/result?latex_file=${result.latex_file}&pdf_file=${result.pdf_file}`;
+                } else {
+                    alert('Error: ' + result.error);
+                    // Reset button state
+                    submitButton.disabled = false;
+                    spinner.style.display = 'none';
+                    icon.style.display = 'inline-block';
+                    submitButton.innerHTML = submitButton.innerHTML.replace('Processing...', 'Generate LaTeX Resume');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing your CV. Please try again.');
+                // Reset button state
+                submitButton.disabled = false;
+                spinner.style.display = 'none';
+                icon.style.display = 'inline-block';
+                submitButton.innerHTML = submitButton.innerHTML.replace('Processing...', 'Generate LaTeX Resume');
+            });
+        });
+
+        // Enhanced animations on scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add smooth entrance animations
+            const elements = document.querySelectorAll('.form-container, .page-header');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            elements.forEach(el => {
+                observer.observe(el);
+            });
+
+            // Add focus animations for form elements
+            const formElements = document.querySelectorAll('.form-control, .form-select');
+            formElements.forEach(element => {
+                element.addEventListener('focus', function() {
+                    this.style.transform = 'scale(1.02)';
+                });
+                
+                element.addEventListener('blur', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html> </body>
+</html> 
