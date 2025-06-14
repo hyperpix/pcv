@@ -55,12 +55,12 @@ gcloud run deploy $SERVICE_NAME \
     --platform managed \
     --region $REGION \
     --allow-unauthenticated \
-    --memory 2Gi \
-    --cpu 1 \
+    --memory 4Gi \
+    --cpu 2 \
     --max-instances 10 \
     --min-instances 0 \
     --port 8080 \
-    --timeout 300 \
+    --timeout 600 \
     --concurrency 80 \
     --set-env-vars "FLASK_ENV=production,PYTHONUNBUFFERED=1"
 

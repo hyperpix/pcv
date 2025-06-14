@@ -1261,9 +1261,9 @@ def compile_latex_to_pdf_with_retry(latex_content, output_filename, max_retries=
     return False
 
 def compile_latex_to_pdf(latex_content, output_filename):
-    """Compile LaTeX content to PDF using TeXlive.net with automatic retry."""
+    """Compile LaTeX content to PDF using smart compilation (local TinyTeX first, then online fallback)."""
     print(f"🔍 compile_latex_to_pdf called with output_filename: {output_filename}")
-    return compile_latex_to_pdf_with_retry(latex_content, output_filename)
+    return compile_latex_to_pdf_smart(latex_content, output_filename)
 
 def save_cv_data(cv_id, cv_data, metadata=None, user_id=None):
     """Save CV data to JSON file for future editing"""
@@ -3754,12 +3754,13 @@ def compile_latex_local(latex_content, output_filename):
     try:
         # Check if pdflatex is available
         import subprocess
-        result = subprocess.run(['which', 'pdflatex'], capture_output=True, text=True)
-        if result.returncode != 0:
+        import shutil
+        pdflatex_path = shutil.which('pdflatex')
+        if not pdflatex_path:
             print("❌ pdflatex not found in PATH")
             return False
         
-        print(f"✅ pdflatex found at: {result.stdout.strip()}")
+        print(f"✅ pdflatex found at: {pdflatex_path}")
         
         # Create temporary directory for compilation
         import tempfile
