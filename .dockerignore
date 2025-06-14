@@ -59,10 +59,11 @@ user_data/
 temp_sessions/
 job_desc_cache/
 *.pdf
-*.tex
 *.log
 *.aux
 *.out
+# Exclude template files from ignore
+!1.tex
 
 # Node.js (if any)
 node_modules/
