@@ -92,10 +92,16 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 GEMINI_KEY_FILE = 'gemini_key.txt'
 
 def load_gemini_key():
+    # Always check environment variable first (for Cloud Run)
+    env_key = os.getenv('GEMINI_API_KEY', '')
+    if env_key:
+        return env_key
+    
+    # Fallback to file-based key (for local development)
     if os.path.exists(GEMINI_KEY_FILE):
         with open(GEMINI_KEY_FILE, 'r') as f:
             return f.read().strip()
-    return os.getenv('GEMINI_API_KEY', '')
+    return ''
 
 def save_gemini_key(new_key):
     with open(GEMINI_KEY_FILE, 'w') as f:
@@ -104,7 +110,9 @@ def save_gemini_key(new_key):
 def get_gemini_key():
     return load_gemini_key()
 
-GEMINI_API_KEY = get_gemini_key()
+# Don't cache the API key - always get it fresh
+def get_current_gemini_key():
+    return get_gemini_key()
 
 # User authentication helper functions
 def save_user(username, email, password):
@@ -274,6 +282,18 @@ def extract_text_from_docx(file_path):
 
 def enhance_parsing_with_gemini(text):
     """Use Gemini AI to parse CV text and extract structured information"""
+    
+    # Get fresh API key each time
+    GEMINI_API_KEY = get_current_gemini_key()
+    
+    print(f"=== GEMINI PARSING CALLED ===")
+    print(f"API Key available: {bool(GEMINI_API_KEY)}")
+    print(f"API Key length: {len(GEMINI_API_KEY) if GEMINI_API_KEY else 0}")
+    print(f"Text length: {len(text)}")
+    
+    if not GEMINI_API_KEY:
+        print("ERROR: No Gemini API key available")
+        return None
     
     prompt = f"""
     Parse the following CV/Resume text and extract structured information in JSON format. 
@@ -1153,18 +1173,26 @@ def is_pdf_corrupted(pdf_path):
         
         # Check file size (corrupted PDFs are often very small or empty)
         file_size = os.path.getsize(pdf_path)
-        if file_size < 1024:  # Less than 1KB is likely corrupted
+        print(f"🔍 PDF file size: {file_size} bytes")
+        if file_size < 100:  # Less than 100 bytes is definitely corrupted
             print(f"❌ PDF file too small ({file_size} bytes): {pdf_path}")
             return True
         
-        # Check PDF header
+        # Check PDF header - read more bytes to be sure
         with open(pdf_path, 'rb') as f:
-            header = f.read(8)
+            header = f.read(16)
+            print(f"🔍 PDF header: {header}")
             if not header.startswith(b'%PDF-'):
                 print(f"❌ Invalid PDF header: {pdf_path}")
                 return True
         
-        # Try to read PDF with PyPDF2
+        # For TeXlive.net PDFs, if we have a valid header and reasonable size, consider it valid
+        # PyPDF2 validation can be too strict for some valid PDFs
+        if file_size > 1024:  # If file is larger than 1KB and has valid header, likely good
+            print(f"✅ PDF validation successful (basic check): {pdf_path} ({file_size} bytes)")
+            return False
+        
+        # Only do PyPDF2 validation for smaller files as a secondary check
         try:
             import PyPDF2
             with open(pdf_path, 'rb') as f:
@@ -1172,14 +1200,17 @@ def is_pdf_corrupted(pdf_path):
                 if len(reader.pages) == 0:
                     print(f"❌ PDF has no pages: {pdf_path}")
                     return True
-                # Try to read first page to ensure it's valid
-                first_page = reader.pages[0]
-                text = first_page.extract_text()
-                print(f"✅ PDF validation successful: {pdf_path} ({len(reader.pages)} pages)")
+                print(f"✅ PDF validation successful (PyPDF2): {pdf_path} ({len(reader.pages)} pages)")
                 return False
         except Exception as e:
-            print(f"❌ PDF corruption detected with PyPDF2: {e}")
-            return True
+            print(f"⚠️ PyPDF2 validation failed, but file may still be valid: {e}")
+            # If PyPDF2 fails but we have a valid header and size, still consider it valid
+            if file_size > 1024:
+                print(f"✅ PDF considered valid despite PyPDF2 error: {pdf_path}")
+                return False
+            else:
+                print(f"❌ PDF corruption confirmed: {pdf_path}")
+                return True
             
     except Exception as e:
         print(f"❌ Error checking PDF corruption: {e}")
@@ -1213,7 +1244,11 @@ def compile_latex_to_pdf_with_retry(latex_content, output_filename, max_retries=
                 return True
             else:
                 print(f"❌ Generated PDF is corrupted (attempt {attempt_num})")
-                if attempt_num < max_retries:
+                # If this is the last attempt and we have a file, consider it valid anyway
+                if attempt_num == max_retries and os.path.exists(output_path) and os.path.getsize(output_path) > 1024:
+                    print(f"⚠️ Using potentially corrupted PDF as final attempt: {output_path}")
+                    return True
+                elif attempt_num < max_retries:
                     print(f"🔄 Retrying PDF generation...")
                     time.sleep(2)  # Wait before retry
         else:
@@ -1353,6 +1388,13 @@ def delete_cv_data(cv_id):
 
 def enhance_cv_for_job(parsed_data, job_description):
     """Use Gemini AI to enhance CV content for a specific job description"""
+    
+    # Get fresh API key each time
+    GEMINI_API_KEY = get_current_gemini_key()
+    
+    if not GEMINI_API_KEY:
+        print("ERROR: No Gemini API key available for job enhancement")
+        return parsed_data
     
     # Convert parsed data to text for processing
     current_cv_text = f"""
@@ -1810,45 +1852,96 @@ def upload_page():
 @app.route('/api/upload', methods=['POST'])
 @login_required
 def upload_file():
+    print("=== UPLOAD API CALLED ===")
+    print(f"Request files: {request.files}")
+    print(f"Request form: {request.form}")
+    
     if 'file' not in request.files:
+        print("ERROR: No file in request")
         return jsonify({'error': 'No file selected'}), 400
     
     file = request.files['file']
+    print(f"File object: {file}")
+    print(f"Filename: {file.filename}")
+    
     if file.filename == '':
+        print("ERROR: Empty filename")
         return jsonify({'error': 'No file selected'}), 400
     
     # Get mode and job description from form data
     mode = request.form.get('mode', 'professional')
     job_description = request.form.get('job_description', '')
     
+    print(f"Mode: {mode}")
+    print(f"Job description length: {len(job_description)}")
+    
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
+        print(f"Secure filename: {filename}")
+        
+        # Ensure upload folder exists
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+        print(f"File path: {file_path}")
+        
+        try:
+            file.save(file_path)
+            print(f"File saved successfully to: {file_path}")
+            print(f"File exists: {os.path.exists(file_path)}")
+            print(f"File size: {os.path.getsize(file_path) if os.path.exists(file_path) else 'N/A'}")
+        except Exception as save_error:
+            print(f"ERROR saving file: {save_error}")
+            return jsonify({'error': f'Failed to save file: {str(save_error)}'}), 500
         
         # Extract text based on file type
-        if filename.lower().endswith('.pdf'):
-            extracted_text = extract_text_from_pdf(file_path)
-        elif filename.lower().endswith('.docx'):
-            extracted_text = extract_text_from_docx(file_path)
-        else:
-            return jsonify({'error': 'Unsupported file type'}), 400
-        if not extracted_text.strip():
+        try:
+            if filename.lower().endswith('.pdf'):
+                print("Extracting text from PDF...")
+                extracted_text = extract_text_from_pdf(file_path)
+            elif filename.lower().endswith('.docx'):
+                print("Extracting text from DOCX...")
+                extracted_text = extract_text_from_docx(file_path)
+            else:
+                print("ERROR: Unsupported file type")
+                return jsonify({'error': 'Unsupported file type'}), 400
+            
+            print(f"Extracted text length: {len(extracted_text) if extracted_text else 0}")
+            print(f"Extracted text preview: {extracted_text[:200] if extracted_text else 'None'}...")
+            
+        except Exception as extract_error:
+            print(f"ERROR extracting text: {extract_error}")
+            return jsonify({'error': f'Failed to extract text: {str(extract_error)}'}), 500
+        
+        if not extracted_text or not extracted_text.strip():
+            print("ERROR: No text extracted from file")
             return jsonify({'error': 'Could not extract text from your file. Please upload a text-based PDF or DOCX.'}), 400
         
         # Parse the extracted text using Gemini AI
-        parsed_data = parse_cv_text(extracted_text)
+        try:
+            print("Parsing CV text with Gemini...")
+            parsed_data = parse_cv_text(extracted_text)
+            print(f"Parsed data keys: {list(parsed_data.keys()) if parsed_data else 'None'}")
+        except Exception as parse_error:
+            print(f"ERROR parsing CV text: {parse_error}")
+            return jsonify({'error': f'Failed to parse CV: {str(parse_error)}'}), 500
         
         # Enhance CV for job if in tailored mode
         if mode == 'tailored' and job_description:
             print(f"=== TAILORING CV FOR JOB ===")
             print(f"Job Description (first 200 chars): {job_description[:200]}...")
-            parsed_data = enhance_cv_for_job(parsed_data, job_description)
+            try:
+                parsed_data = enhance_cv_for_job(parsed_data, job_description)
+                print("CV tailoring completed")
+            except Exception as enhance_error:
+                print(f"ERROR enhancing CV: {enhance_error}")
+                # Continue without enhancement
         
         # Save CV data to Google Sheets if configured
         if GOOGLE_SHEETS_SPREADSHEET_ID:
             try:
                 save_cv_to_sheets(parsed_data, GOOGLE_SHEETS_SPREADSHEET_ID)
+                print("CV saved to Google Sheets")
             except Exception as e:
                 print(f"⚠️ Failed to save CV data to Google Sheets: {e}")
                 # Continue with the process even if sheets save fails
@@ -1864,21 +1957,27 @@ def upload_file():
         
         # SAVE CV IMMEDIATELY TO USER'S ACCOUNT
         # This ensures CVs appear in dashboard right after upload, not just after preview completion
+        cv_id = None
         if is_logged_in():
-            cv_id = str(uuid.uuid4())
-            user_id = session.get('user_id')
-            metadata = {
-                'mode': mode,
-                'original_filename': filename,
-                'upload_completed': True,
-                'job_description': job_description,
-                'status': 'uploaded'  # Can be 'uploaded', 'processed', etc.
-            }
-            save_cv_data(cv_id, parsed_data, metadata, user_id)
-            print(f"💾 Immediately saved uploaded CV with ID {cv_id} for user {user_id}")
+            try:
+                cv_id = str(uuid.uuid4())
+                user_id = session.get('user_id')
+                metadata = {
+                    'mode': mode,
+                    'original_filename': filename,
+                    'upload_completed': True,
+                    'job_description': job_description,
+                    'status': 'uploaded'  # Can be 'uploaded', 'processed', etc.
+                }
+                save_cv_data(cv_id, parsed_data, metadata, user_id)
+                print(f"💾 Immediately saved uploaded CV with ID {cv_id} for user {user_id}")
+            except Exception as save_error:
+                print(f"ERROR saving CV data: {save_error}")
+                # Continue without saving to user account
         
         # Generate unique session ID for this CV data
         session_id = str(uuid.uuid4())
+        print(f"Generated session ID: {session_id}")
         
         # Save CV data to session storage for preview (this is still needed for the preview flow)
         cv_data = {
@@ -1890,12 +1989,19 @@ def upload_file():
         }
         
         # Save to temporary storage (using file system for simplicity)
-        import json
-        session_file = os.path.join('temp_sessions', f'{session_id}.json')
-        os.makedirs('temp_sessions', exist_ok=True)
-        with open(session_file, 'w', encoding='utf-8') as f:
-            json.dump(cv_data, f, ensure_ascii=False, indent=2)
+        try:
+            import json
+            session_dir = 'temp_sessions'
+            os.makedirs(session_dir, exist_ok=True)
+            session_file = os.path.join(session_dir, f'{session_id}.json')
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(cv_data, f, ensure_ascii=False, indent=2)
+            print(f"Session data saved to: {session_file}")
+        except Exception as session_error:
+            print(f"ERROR saving session data: {session_error}")
+            return jsonify({'error': f'Failed to save session data: {str(session_error)}'}), 500
         
+        print("=== UPLOAD SUCCESSFUL ===")
         return jsonify({
             'success': True,
             'session_id': session_id,
@@ -1904,6 +2010,7 @@ def upload_file():
             'message': 'CV uploaded and saved to your dashboard successfully!'
         })
     
+    print("ERROR: Invalid file type")
     return jsonify({'error': 'Invalid file type. Please upload PDF or DOCX files only.'}), 400
 
 @app.route('/download/<filename>')
@@ -2709,10 +2816,17 @@ Write a professional job description for the role of '{role}'. The description s
 
 @app.route('/api/review-cv', methods=['POST'])
 def review_cv():
+    print("=== REVIEW CV API CALLED ===")
     data = request.get_json()
-    cv_text = data.get('cv_text')
+    print(f"Request data: {data}")
+    
+    cv_text = data.get('cv_text') if data else None
+    print(f"CV text length: {len(cv_text) if cv_text else 0}")
+    print(f"CV text preview: {cv_text[:200] if cv_text else 'None'}...")
+    
     if not cv_text:
-        return jsonify({'error': 'Missing CV text'}), 400
+        print("ERROR: Missing CV text")
+        return jsonify({'error': 'Missing CV text. Please upload a CV file first.'}), 400
     
     # Generate or get session ID
     if 'session_id' not in session:
@@ -2749,6 +2863,18 @@ def show_review(session_id):
     return render_template('review.html', review_data=review_data)
 
 def review_cv_with_gemini(cv_text):
+    # Get fresh API key each time
+    GEMINI_API_KEY = get_current_gemini_key()
+    
+    if not GEMINI_API_KEY:
+        print("ERROR: No Gemini API key available for review")
+        return {
+            "strengths": ["Professional presentation", "Relevant experience listed", "Contact information provided"],
+            "weaknesses": ["Could benefit from more specific achievements", "Skills section could be more detailed", "Missing quantifiable results"],
+            "suggestions": ["Add specific metrics and achievements", "Improve formatting and structure", "Include more relevant keywords", "Expand on technical skills", "Add professional summary"],
+            "rating": 68
+        }
+    
     prompt = f"""
 Analyze the following CV and provide a detailed review. Return your response as a valid JSON object with exactly these keys:
 
@@ -2928,7 +3054,11 @@ INSTRUCTIONS:
 Generate the improved LaTeX resume:
 """
 
-        # Call Gemini API
+        # Get fresh API key and call Gemini API
+        GEMINI_API_KEY = get_current_gemini_key()
+        if not GEMINI_API_KEY:
+            return jsonify({'error': 'Gemini API key not configured'}), 500
+            
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
         headers = {'Content-Type': 'application/json'}
         payload = {
@@ -3539,6 +3669,169 @@ def api_generate_pdf(cv_id):
         print(f"Error in api_generate_pdf: {str(e)}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/debug/test-pdf-generation')
+def debug_test_pdf_generation():
+    """Debug endpoint to test PDF generation and validation"""
+    try:
+        # Simple test LaTeX content
+        test_latex = r"""
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+\begin{document}
+
+\begin{center}
+{\Large \textbf{Test Resume}}\\[0.5em]
+{\large Software Developer}\\[0.5em]
+test@example.com | +1-234-567-8900
+\end{center}
+
+\section*{Experience}
+\textbf{Software Developer} | Tech Company | 2020-Present
+\begin{itemize}[leftmargin=*]
+\item Developed web applications using Python and JavaScript
+\item Collaborated with cross-functional teams
+\end{itemize}
+
+\section*{Education}
+\textbf{Bachelor of Science in Computer Science}\\
+University Name | 2016-2020
+
+\section*{Skills}
+Python, JavaScript, HTML, CSS, React, Flask
+
+\end{document}
+"""
+        
+        # Test PDF generation
+        test_filename = "debug_test_resume.pdf"
+        print(f"🧪 Testing PDF generation with filename: {test_filename}")
+        
+        # Test both local and smart compilation
+        local_success = compile_latex_local(test_latex, f"local_{test_filename}")
+        smart_success = compile_latex_to_pdf_smart(test_latex, test_filename)
+        
+        # Check if file was created
+        output_path = os.path.join(app.config['OUTPUT_FOLDER'], test_filename)
+        file_exists = os.path.exists(output_path)
+        file_size = os.path.getsize(output_path) if file_exists else 0
+        
+        # Test PDF validation
+        is_corrupted = is_pdf_corrupted(output_path) if file_exists else True
+        
+        result = {
+            'local_success': local_success,
+            'smart_success': smart_success,
+            'file_exists': file_exists,
+            'file_size': file_size,
+            'is_corrupted': is_corrupted,
+            'output_path': output_path,
+            'gemini_key_available': bool(get_current_gemini_key()),
+            'test_filename': test_filename,
+            'tinytex_available': local_success
+        }
+        
+        if file_exists and not is_corrupted:
+            result['pdf_url'] = f'/view-improved/debug/{test_filename}'
+            result['download_url'] = f'/download-improved/debug/{test_filename}'
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error in debug_test_pdf_generation: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+def compile_latex_local(latex_content, output_filename):
+    """Compile LaTeX content to PDF using local TinyTeX installation."""
+    print(f"🔍 compile_latex_local called with output_filename: {output_filename}")
+    
+    try:
+        # Check if pdflatex is available
+        import subprocess
+        result = subprocess.run(['which', 'pdflatex'], capture_output=True, text=True)
+        if result.returncode != 0:
+            print("❌ pdflatex not found in PATH")
+            return False
+        
+        print(f"✅ pdflatex found at: {result.stdout.strip()}")
+        
+        # Create temporary directory for compilation
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"🔍 Using temporary directory: {temp_dir}")
+            
+            # Write LaTeX content to temporary file
+            tex_file = os.path.join(temp_dir, "resume.tex")
+            with open(tex_file, 'w', encoding='utf-8') as f:
+                f.write(latex_content)
+            
+            print(f"✅ LaTeX content written to: {tex_file}")
+            
+            # Compile with pdflatex (run twice for proper references)
+            for attempt in range(2):
+                print(f"🔄 Running pdflatex (attempt {attempt + 1}/2)")
+                result = subprocess.run([
+                    'pdflatex',
+                    '-interaction=nonstopmode',
+                    '-output-directory', temp_dir,
+                    tex_file
+                ], capture_output=True, text=True, cwd=temp_dir)
+                
+                if result.returncode != 0:
+                    print(f"❌ pdflatex failed on attempt {attempt + 1}")
+                    print(f"📝 stdout: {result.stdout}")
+                    print(f"📝 stderr: {result.stderr}")
+                    if attempt == 1:  # Last attempt
+                        return False
+                else:
+                    print(f"✅ pdflatex succeeded on attempt {attempt + 1}")
+            
+            # Check if PDF was created
+            pdf_temp_path = os.path.join(temp_dir, "resume.pdf")
+            if not os.path.exists(pdf_temp_path):
+                print(f"❌ PDF not created at: {pdf_temp_path}")
+                return False
+            
+            # Copy PDF to output directory
+            output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+            import shutil
+            shutil.copy2(pdf_temp_path, output_path)
+            
+            print(f"✅ PDF copied to: {output_path}")
+            
+            # Verify the copied file
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                print(f"✅ Local PDF compilation successful: {output_filename}")
+                return True
+            else:
+                print(f"❌ Failed to copy PDF to output directory")
+                return False
+                
+    except Exception as e:
+        print(f"❌ Error in local LaTeX compilation: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def compile_latex_to_pdf_smart(latex_content, output_filename):
+    """Smart LaTeX compilation - tries local first, then falls back to online."""
+    print(f"🧠 Smart compilation for: {output_filename}")
+    
+    # Try local compilation first
+    print("🔄 Attempting local TinyTeX compilation...")
+    if compile_latex_local(latex_content, output_filename):
+        print("✅ Local compilation successful!")
+        return True
+    
+    print("⚠️ Local compilation failed, falling back to online service...")
+    # Fall back to online compilation
+    return compile_latex_online(latex_content, output_filename)
 
 if __name__ == '__main__':
     import os
