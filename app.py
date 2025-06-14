@@ -3017,7 +3017,7 @@ def generate_improved_resume():
         print(f"🔄 Generating improved resume for session: {session_id}")
         
         # Read the 1.tex template
-        template_path = '1.tex'
+        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '1.tex')
         if not os.path.exists(template_path):
             return jsonify({'error': '1.tex template file not found'}), 500
         
