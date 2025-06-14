@@ -1,0 +1,48 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/polishmycv:$COMMIT_SHA', '.']
+    
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/polishmycv:$COMMIT_SHA']
+    
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'polishmycv'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/polishmycv:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--port'
+      - '8080'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '80'
+      - '--set-env-vars'
+      - 'FLASK_ENV=production,PYTHONUNBUFFERED=1'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/polishmycv:$COMMIT_SHA'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8' 
