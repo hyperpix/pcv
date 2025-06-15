@@ -1261,9 +1261,9 @@ def compile_latex_to_pdf_with_retry(latex_content, output_filename, max_retries=
     return False
 
 def compile_latex_to_pdf(latex_content, output_filename):
-    """Compile LaTeX content to PDF using smart compilation (local TinyTeX first, then online fallback)."""
+    """Compile LaTeX content to PDF using multiple fallback services."""
     print(f"🔍 compile_latex_to_pdf called with output_filename: {output_filename}")
-    return compile_latex_to_pdf_smart(latex_content, output_filename)
+    return compile_latex_to_pdf_with_fallbacks(latex_content, output_filename)
 
 def save_cv_data(cv_id, cv_data, metadata=None, user_id=None):
     """Save CV data to JSON file for future editing"""
@@ -3522,6 +3522,66 @@ def regenerate_pdf():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/regenerate-improved-pdf', methods=['POST'])
+def regenerate_improved_pdf():
+    """Regenerate improved PDF for a session"""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            return jsonify({'error': 'Session ID is required'}), 400
+        
+        # Load session data
+        session_file = os.path.join(TEMP_FOLDER, f"{session_id}_improved.json")
+        if not os.path.exists(session_file):
+            return jsonify({'error': 'Session not found'}), 404
+        
+        with open(session_file, 'r', encoding='utf-8') as f:
+            session_data = json.load(f)
+        
+        # Get the LaTeX content
+        latex_content = session_data.get('improved_latex')
+        if not latex_content:
+            return jsonify({'error': 'No LaTeX content found for this session'}), 400
+        
+        # Generate new PDF filename
+        timestamp = int(time.time())
+        pdf_filename = f"improved_resume_{session_id}_{timestamp}.pdf"
+        
+        print(f"🔄 Regenerating improved PDF for session {session_id}: {pdf_filename}")
+        
+        # Compile LaTeX to PDF with fallbacks
+        pdf_compiled = compile_latex_to_pdf(latex_content, pdf_filename)
+        
+        if pdf_compiled:
+            # Update session data
+            session_data['pdf_filename'] = pdf_filename
+            session_data['pdf_regenerated_at'] = time.strftime('%Y-%m-%d %H:%M:%S')
+            session_data['regeneration_count'] = session_data.get('regeneration_count', 0) + 1
+            
+            # Save updated session data
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, indent=2, ensure_ascii=False)
+            
+            return jsonify({
+                'success': True,
+                'pdf_filename': pdf_filename,
+                'pdf_preview_url': f'/view-improved/{session_id}/{pdf_filename}',
+                'download_url': f'/download-improved/{session_id}/{pdf_filename}',
+                'message': 'PDF regenerated successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to regenerate PDF with all services'
+            }), 500
+            
+    except Exception as e:
+        print(f"Error in regenerate_improved_pdf: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/login', methods=['POST'])
 def api_login():
     """API endpoint for React frontend login"""
@@ -3818,6 +3878,116 @@ def compile_latex_local(latex_content, output_filename):
         print(f"❌ Error in local LaTeX compilation: {e}")
         import traceback
         traceback.print_exc()
+        return False
+
+def compile_latex_to_pdf_with_fallbacks(latex_content, output_filename):
+    """Compile LaTeX with multiple fallback services as requested."""
+    print(f"🔄 Starting compilation with fallbacks for: {output_filename}")
+    
+    # Service 1: TeXlive.net (primary)
+    print("🔄 Attempting TeXlive.net compilation...")
+    if compile_latex_online(latex_content, output_filename):
+        print("✅ TeXlive.net compilation successful!")
+        return True
+    
+    print("⚠️ TeXlive.net failed, trying YtoTech latex-on-http...")
+    # Service 2: YtoTech latex-on-http fallback
+    if compile_latex_ytotech(latex_content, output_filename):
+        print("✅ YtoTech compilation successful!")
+        return True
+    
+    print("⚠️ YtoTech failed, trying aslushnikov latex-online...")
+    # Service 3: aslushnikov latex-online final fallback
+    if compile_latex_aslushnikov(latex_content, output_filename):
+        print("✅ aslushnikov compilation successful!")
+        return True
+    
+    print("❌ All compilation services failed")
+    return False
+
+def compile_latex_ytotech(latex_content, output_filename):
+    """Compile LaTeX using YtoTech latex-on-http service."""
+    print(f"🔍 YtoTech compilation for: {output_filename}")
+    
+    try:
+        import requests
+        import json
+        
+        # YtoTech API endpoint
+        url = "https://latex.ytotech.com/builds/sync"
+        
+        # Prepare the payload
+        payload = {
+            "compiler": "pdflatex",
+            "resources": [
+                {
+                    "main": True,
+                    "content": latex_content
+                }
+            ]
+        }
+        
+        print("📤 Sending request to YtoTech...")
+        response = requests.post(
+            url,
+            json=payload,
+            headers={'Content-Type': 'application/json'},
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            # Save the PDF
+            output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+            with open(output_path, 'wb') as f:
+                f.write(response.content)
+            
+            print(f"✅ YtoTech PDF saved: {output_path}")
+            return True
+        else:
+            print(f"❌ YtoTech failed with status {response.status_code}: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ YtoTech compilation error: {e}")
+        return False
+
+def compile_latex_aslushnikov(latex_content, output_filename):
+    """Compile LaTeX using aslushnikov latex-online service."""
+    print(f"🔍 aslushnikov compilation for: {output_filename}")
+    
+    try:
+        import requests
+        
+        # aslushnikov API endpoint
+        url = "https://latexonline.cc/compile"
+        
+        # Prepare the data
+        data = {
+            'text': latex_content,
+            'command': 'pdflatex'
+        }
+        
+        print("📤 Sending request to aslushnikov...")
+        response = requests.post(
+            url,
+            data=data,
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            # Save the PDF
+            output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+            with open(output_path, 'wb') as f:
+                f.write(response.content)
+            
+            print(f"✅ aslushnikov PDF saved: {output_path}")
+            return True
+        else:
+            print(f"❌ aslushnikov failed with status {response.status_code}: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ aslushnikov compilation error: {e}")
         return False
 
 def compile_latex_to_pdf_smart(latex_content, output_filename):

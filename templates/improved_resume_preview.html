@@ -208,6 +208,37 @@
             color: white;
         }
 
+        .pdf-error-notice {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(224, 62, 62, 0.1);
+            border: 1px solid rgba(224, 62, 62, 0.3);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--notion-red);
+            margin-bottom: 8px;
+        }
+
+        .btn-notion:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-notion.loading {
+            position: relative;
+        }
+
+        .btn-notion.loading .fas {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .content-area {
             flex: 1;
             margin-left: 280px;
@@ -481,11 +512,21 @@
             <!-- Action Buttons -->
             <div class="action-buttons">
                 {% if pdf_available %}
-                <a href="/download-improved/{{ session_id }}/{{ pdf_filename }}" class="btn-notion primary">
+                <a href="/download-improved/{{ session_id }}/{{ pdf_filename }}" class="btn-notion primary" id="download-pdf-btn">
                     <i class="fas fa-download"></i>
                     Download PDF
                 </a>
+                {% else %}
+                <div class="pdf-error-notice">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--notion-red);"></i>
+                    <span>PDF generation failed</span>
+                </div>
                 {% endif %}
+                
+                <button onclick="regeneratePDF()" class="btn-notion" id="regenerate-btn">
+                    <i class="fas fa-sync-alt"></i>
+                    <span id="regenerate-text">Regenerate PDF</span>
+                </button>
                 
                 <a href="/download-improved/{{ session_id }}/{{ latex_filename }}" class="btn-notion">
                     <i class="fas fa-code"></i>
@@ -634,8 +675,135 @@
             }
         }
 
+        // Regenerate PDF function
+        async function regeneratePDF() {
+            const regenerateBtn = document.getElementById('regenerate-btn');
+            const regenerateText = document.getElementById('regenerate-text');
+            const regenerateIcon = regenerateBtn.querySelector('.fas');
+            
+            // Disable button and show loading state
+            regenerateBtn.disabled = true;
+            regenerateBtn.classList.add('loading');
+            regenerateText.textContent = 'Regenerating...';
+            
+            try {
+                const response = await fetch('/api/regenerate-improved-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: '{{ session_id }}'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update download link and reload PDF
+                    const downloadBtn = document.getElementById('download-pdf-btn');
+                    if (downloadBtn) {
+                        downloadBtn.href = result.download_url;
+                    }
+                    
+                    // Reload PDF iframe
+                    const pdfViewer = document.querySelector('.pdf-viewer');
+                    if (pdfViewer) {
+                        pdfViewer.src = result.pdf_preview_url + '#toolbar=1&navpanes=0&scrollbar=1';
+                    }
+                    
+                    // Show success message
+                    showNotification('PDF regenerated successfully!', 'success');
+                    
+                    // If PDF wasn't available before, reload the page to show it
+                    {% if not pdf_available %}
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                    {% endif %}
+                } else {
+                    showNotification('Failed to regenerate PDF: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error regenerating PDF:', error);
+                showNotification('Error regenerating PDF. Please try again.', 'error');
+            } finally {
+                // Re-enable button
+                regenerateBtn.disabled = false;
+                regenerateBtn.classList.remove('loading');
+                regenerateText.textContent = 'Regenerate PDF';
+            }
+        }
+        
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            // Add notification styles
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                background: ${type === 'success' ? 'var(--notion-green)' : type === 'error' ? 'var(--notion-red)' : 'var(--notion-blue)'};
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+        
+        // Auto-regenerate if PDF failed to load
+        function checkPDFLoad() {
+            {% if pdf_available %}
+            const pdfViewer = document.querySelector('.pdf-viewer');
+            if (pdfViewer) {
+                pdfViewer.addEventListener('error', function() {
+                    console.log('PDF failed to load, attempting auto-regeneration...');
+                    showNotification('PDF failed to load. Attempting to regenerate...', 'info');
+                    setTimeout(() => {
+                        regeneratePDF();
+                    }, 1000);
+                });
+            }
+            {% else %}
+            // Auto-regenerate if no PDF is available
+            console.log('No PDF available, attempting auto-regeneration...');
+            showNotification('Generating PDF...', 'info');
+            setTimeout(() => {
+                regeneratePDF();
+            }, 2000);
+            {% endif %}
+        }
+
         // Add smooth scrolling and animations
         document.addEventListener('DOMContentLoaded', function() {
+            // Check PDF load status
+            checkPDFLoad();
+            
             // Animate score values
             const scoreValues = document.querySelectorAll('.score-value');
             scoreValues.forEach(score => {
@@ -654,6 +822,20 @@
                 }, 50);
             });
         });
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html> 
